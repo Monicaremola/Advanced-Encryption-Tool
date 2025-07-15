@@ -1,0 +1,60 @@
+from cryptography.fernet import Fernet
+import base64
+import os
+import hashlib
+
+
+def derive_key(password: str) -> bytes:
+    # Derive a 32-byte key from the password using SHA-256
+    return base64.urlsafe_b64encode(hashlib.sha256(password.encode()).digest())
+
+
+def encrypt_file(file_path, password):
+    key = derive_key(password)
+    fernet = Fernet(key)
+    with open(file_path, 'rb') as file:
+        original = file.read()
+    encrypted = fernet.encrypt(original)
+    enc_file_path = file_path + '.enc'
+    with open(enc_file_path, 'wb') as enc_file:
+        enc_file.write(encrypted)
+    print(f'File encrypted and saved as {enc_file_path}')
+
+
+def decrypt_file(file_path, password):
+    key = derive_key(password)
+    fernet = Fernet(key)
+    with open(file_path, 'rb') as enc_file:
+        encrypted = enc_file.read()
+    try:
+        decrypted = fernet.decrypt(encrypted)
+    except Exception as e:
+        print('Decryption failed. Wrong password or corrupted file.')
+        return
+    dec_file_path = file_path.replace('.enc', '.dec')
+    with open(dec_file_path, 'wb') as dec_file:
+        dec_file.write(decrypted)
+    print(f'File decrypted and saved as {dec_file_path}')
+
+
+def main():
+    print('Advanced Encryption Tool (AES-256)')
+    print('1. Encrypt a file')
+    print('2. Decrypt a file')
+    choice = input('Choose an option (1/2): ').strip()
+    if choice not in ['1', '2']:
+        print('Invalid choice.')
+        return
+    file_path = input('Enter the file path: ').strip()
+    if not os.path.isfile(file_path):
+        print('File does not exist.')
+        return
+    password = input('Enter password: ').strip()
+    if choice == '1':
+        encrypt_file(file_path, password)
+    else:
+        decrypt_file(file_path, password)
+
+
+if __name__ == '__main__':
+    main() 
